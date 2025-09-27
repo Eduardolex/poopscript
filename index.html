@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Poop Triangle Copier</title>
+<style>
+  :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+  body { background:#0f1115; color:#e7e9ee; display:grid; place-items:center; min-height:100svh; margin:0; padding:24px; }
+  .card { width:min(680px, 92vw); background:#171a21; border:1px solid #2a2f3a; border-radius:16px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35); }
+  h1 { margin:0 0 14px; font-size:20px; display:flex; align-items:center; gap:10px; }
+  h1 .emoji { font-size:24px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:end; margin:10px 0 16px; }
+  label { font-size:14px; color:#aab2c0; display:block; margin-bottom:6px; }
+  input[type="number"] { width:120px; padding:10px 12px; border-radius:10px; border:1px solid #2a2f3a; background:#0f1218; color:#e7e9ee; }
+  .toggle { display:flex; align-items:center; gap:8px; user-select:none; }
+  .btn { cursor:pointer; border:1px solid #2a2f3a; background:#232838; color:#e7e9ee; padding:10px 14px; border-radius:12px; transition:.15s ease; }
+  .btn:hover { transform:translateY(-1px); }
+  .btn.primary { background:#6b7cff; border-color:#6b7cff; color:white; }
+  .btn.ghost { background:transparent; }
+  .preview { background:#0b0d12; border:1px solid #202433; border-radius:12px; padding:12px; min-height:120px; white-space:pre; overflow:auto; font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", Consolas, "Liberation Mono", monospace; }
+  .hint { color:#8b93a6; font-size:12px; margin-top:8px; }
+  .spacer { flex:1; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1><span class="emoji">💩</span> Poop Triangle Copier</h1>
+
+    <div class="row">
+      <div>
+        <label for="lines">Lines</label>
+        <input id="lines" type="number" min="1" max="500" value="20" />
+      </div>
+
+      <label class="toggle" title="Grow, then shrink back down">
+        <input id="pyramid" type="checkbox" />
+        <span>Pyramid mode</span>
+      </label>
+
+      <div class="spacer"></div>
+
+      <button id="previewBtn" class="btn">Preview</button>
+      <button id="copyBtn" class="btn primary">💩 Copy to Clipboard</button>
+    </div>
+
+    <div id="preview" class="preview" aria-live="polite"></div>
+    <div class="hint">Tip: after copying, just press <b>Ctrl/Cmd + V</b> in Discord.</div>
+  </div>
+
+<script>
+  const linesEl   = document.getElementById('lines');
+  const pyramidEl = document.getElementById('pyramid');
+  const previewEl = document.getElementById('preview');
+  const previewBtn= document.getElementById('previewBtn');
+  const copyBtn   = document.getElementById('copyBtn');
+
+  function makePoopLine(n) {
+    // "p" + "o".repeat(n) + "p"
+    return 'p' + 'o'.repeat(n) + 'p';
+  }
+
+  function makeTriangle(lines) {
+    let out = [];
+    for (let i = 1; i <= lines; i++) out.push(makePoopLine(i));
+    return out.join('\n');
+  }
+
+  function makePyramid(lines) {
+    let out = [];
+    for (let i = 1; i <= lines; i++) out.push(makePoopLine(i));         // up
+    for (let i = lines - 1; i >= 1; i--) out.push(makePoopLine(i));      // down
+    return out.join('\n');
+  }
+
+  function buildText() {
+    let n = parseInt(linesEl.value, 10);
+    if (Number.isNaN(n)) n = 1;
+    n = Math.max(1, Math.min(500, n));        // safety cap
+    linesEl.value = n;
+    return pyramidEl.checked ? makePyramid(n) : makeTriangle(n);
+  }
+
+  async function copyToClipboard(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return true;
+      }
+    } catch {}
+    // Fallback (works in non-secure contexts)
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); return true; }
+    catch { return false; }
+    finally { document.body.removeChild(ta); }
+  }
+
+  function refreshPreview() {
+    previewEl.textContent = buildText();
+  }
+
+  // live-ish preview on input
+  linesEl.addEventListener('input', refreshPreview);
+  pyramidEl.addEventListener('change', refreshPreview);
+  previewBtn.addEventListener('click', refreshPreview);
+
+  copyBtn.addEventListener('click', async () => {
+    const text = buildText();
+    const ok = await copyToClipboard(text);
+    copyBtn.textContent = ok ? '✅ Copied!' : '⚠️ Copy failed';
+    setTimeout(() => (copyBtn.textContent = '💩 Copy to Clipboard'), 1400);
+    if (!previewEl.textContent) refreshPreview();
+  });
+
+  // initial render
+  refreshPreview();
+</script>
+</body>
+</html>
